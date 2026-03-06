@@ -16,9 +16,7 @@ pipeline {
                 sshagent([env.SSH_CREDENTIAL]) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@$SERVER_IP "
-                        echo 'Updating server and installing dependencies...'
-                        sudo dnf update -y
-                        sudo dnf install java-17-amazon-corretto git -y
+                        sudo dnf install java-17-amazon-corretto-devel git -y
                         mkdir -p $APP_DIR
                     "
                     '''
@@ -32,11 +30,9 @@ pipeline {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@$SERVER_IP "
                         if [ -d $APP_DIR/.git ]; then
-                            echo 'Repository exists, pulling latest code...'
                             cd $APP_DIR
                             git pull origin $BRANCH
                         else
-                            echo 'Cloning repository...'
                             git clone -b $BRANCH $REPO_URL $APP_DIR
                         fi
                     "
@@ -51,7 +47,7 @@ pipeline {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@$SERVER_IP "
                         echo 'Stopping old server if running...'
-                        pkill -f 'java Server' || true
+                        fuser -k 8080/tcp || true
 
                         echo 'Building application...'
                         cd $APP_DIR
@@ -64,7 +60,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
